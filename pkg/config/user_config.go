@@ -29,6 +29,7 @@ type GuiConfig struct {
 	Theme                    ThemeConfig        `yaml:"theme"`
 	CommitLength             CommitLengthConfig `yaml:"commitLength"`
 	SkipNoStagedFilesWarning bool               `yaml:"skipNoStagedFilesWarning"`
+	CommitTemplate           string             `yaml:"commitTemplate"`
 }
 
 type ThemeConfig struct {
@@ -291,7 +292,8 @@ func GetDefaultConfig() *UserConfig {
 			Paging: PagingConfig{
 				ColorArg:  "always",
 				Pager:     "",
-				UseConfig: false},
+				UseConfig: false,
+			},
 			Merging: MergingConfig{
 				ManualCommit: false,
 				Args:         "",

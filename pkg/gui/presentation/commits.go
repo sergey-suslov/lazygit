@@ -9,10 +9,10 @@ import (
 	"github.com/jesseduffield/lazygit/pkg/utils"
 )
 
-func GetCommitListDisplayStrings(commits []*models.Commit, fullDescription bool, cherryPickedCommitShaMap map[string]bool, diffName string) [][]string {
+func GetCommitListDisplayStrings(commits []*models.Commit, fullDescription bool, cherryPickedCommitShaMap map[string]bool, diffName, commitTemplate string) [][]string {
 	lines := make([][]string, len(commits))
 
-	var displayFunc func(*models.Commit, map[string]bool, bool) []string
+	var displayFunc func(*models.Commit, map[string]bool, bool, string) []string
 	if fullDescription {
 		displayFunc = getFullDescriptionDisplayStringsForCommit
 	} else {
@@ -21,13 +21,13 @@ func GetCommitListDisplayStrings(commits []*models.Commit, fullDescription bool,
 
 	for i := range commits {
 		diffed := commits[i].Sha == diffName
-		lines[i] = displayFunc(commits[i], cherryPickedCommitShaMap, diffed)
+		lines[i] = displayFunc(commits[i], cherryPickedCommitShaMap, diffed, commitTemplate)
 	}
 
 	return lines
 }
 
-func getFullDescriptionDisplayStringsForCommit(c *models.Commit, cherryPickedCommitShaMap map[string]bool, diffed bool) []string {
+func getFullDescriptionDisplayStringsForCommit(c *models.Commit, cherryPickedCommitShaMap map[string]bool, diffed bool, commitTemplate string) []string {
 	red := color.New(color.FgRed)
 	yellow := color.New(color.FgYellow)
 	green := color.New(color.FgGreen)
@@ -76,7 +76,7 @@ func getFullDescriptionDisplayStringsForCommit(c *models.Commit, cherryPickedCom
 	return []string{shaColor.Sprint(c.ShortSha()), secondColumnString, yellow.Sprint(truncatedAuthor), tagString + defaultColor.Sprint(c.Name)}
 }
 
-func getDisplayStringsForCommit(c *models.Commit, cherryPickedCommitShaMap map[string]bool, diffed bool) []string {
+func getDisplayStringsForCommit(c *models.Commit, cherryPickedCommitShaMap map[string]bool, diffed bool, commitTemplate string) []string {
 	red := color.New(color.FgRed)
 	yellow := color.New(color.FgYellow)
 	green := color.New(color.FgGreen)
@@ -120,7 +120,55 @@ func getDisplayStringsForCommit(c *models.Commit, cherryPickedCommitShaMap map[s
 		tagString = utils.ColoredStringDirect(strings.Join(c.Tags, " "), tagColor) + " "
 	}
 
-	return []string{shaColor.Sprint(c.ShortSha()), actionString + tagString + defaultColor.Sprint(c.Name)}
+	parts := []string{}
+	commitTemplateParts := getListOfAllowedPartsFromCommitTemplate(commitTemplate)
+	for i := range commitTemplateParts {
+		switch commitTemplateParts[i] {
+		case ShortShaCommitKey:
+			parts = append(parts, shaColor.Sprint(c.ShortSha()))
+		case MessageCommitKey:
+			parts = append(parts, tagString+defaultColor.Sprint(c.Name))
+		case AuthorCommitKey:
+			parts = append(parts, yellow.Sprint(utils.TruncateWithEllipsis(c.Author, 17)))
+		}
+	}
+	parts[0] = actionString + parts[0]
+
+	return parts
+}
+
+type CommitTemplateKey string
+
+const (
+	ShortShaCommitKey CommitTemplateKey = "short-sha"
+	MessageCommitKey  CommitTemplateKey = "message"
+	AuthorCommitKey   CommitTemplateKey = "author"
+)
+
+func (key CommitTemplateKey) IsValid() bool {
+	_, ok := allowedCommitTemplateKeys[key]
+	return ok
+}
+
+var allowedCommitTemplateKeys = map[CommitTemplateKey]struct{}{
+	ShortShaCommitKey: {},
+	MessageCommitKey:  {},
+	AuthorCommitKey:   {},
+}
+
+func getListOfAllowedPartsFromCommitTemplate(commitTemplate string) []CommitTemplateKey {
+	parts := strings.Split(commitTemplate, "|")
+	allowedParts := []CommitTemplateKey{}
+	for i := range parts {
+		commitTemplateKey := CommitTemplateKey(parts[i])
+		if commitTemplateKey.IsValid() {
+			allowedParts = append(allowedParts, commitTemplateKey)
+		}
+	}
+	if len(allowedParts) == 0 {
+		return []CommitTemplateKey{ShortShaCommitKey, MessageCommitKey}
+	}
+	return allowedParts
 }
 
 func actionColorMap(str string) color.Attribute {

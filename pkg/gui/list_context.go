@@ -372,7 +372,7 @@ func (gui *Gui) branchCommitsListContext() *ListContext {
 		ResetMainViewOriginOnFocus: true,
 		Kind:                       SIDE_CONTEXT,
 		GetDisplayStrings: func() [][]string {
-			return presentation.GetCommitListDisplayStrings(gui.State.Commits, gui.State.ScreenMode != SCREEN_NORMAL, gui.cherryPickedCommitShaMap(), gui.State.Modes.Diffing.Ref)
+			return presentation.GetCommitListDisplayStrings(gui.State.Commits, gui.State.ScreenMode != SCREEN_NORMAL, gui.cherryPickedCommitShaMap(), gui.State.Modes.Diffing.Ref, gui.Config.GetUserConfig().Gui.CommitTemplate)
 		},
 		SelectedItem: func() (ListItem, bool) {
 			item := gui.getSelectedLocalCommit()
@@ -412,7 +412,7 @@ func (gui *Gui) subCommitsListContext() *ListContext {
 		ResetMainViewOriginOnFocus: true,
 		Kind:                       SIDE_CONTEXT,
 		GetDisplayStrings: func() [][]string {
-			return presentation.GetCommitListDisplayStrings(gui.State.SubCommits, gui.State.ScreenMode != SCREEN_NORMAL, gui.cherryPickedCommitShaMap(), gui.State.Modes.Diffing.Ref)
+			return presentation.GetCommitListDisplayStrings(gui.State.SubCommits, gui.State.ScreenMode != SCREEN_NORMAL, gui.cherryPickedCommitShaMap(), gui.State.Modes.Diffing.Ref, gui.Config.GetUserConfig().Gui.CommitTemplate)
 		},
 		SelectedItem: func() (ListItem, bool) {
 			item := gui.getSelectedSubCommit()
